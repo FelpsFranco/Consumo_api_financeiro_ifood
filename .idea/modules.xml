@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/API_FINANCIAL_EVENTS_IFOOD.iml" filepath="$PROJECT_DIR$/API_FINANCIAL_EVENTS_IFOOD.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Consumo_api_financeiro_ifood.iml" filepath="$PROJECT_DIR$/Consumo_api_financeiro_ifood.iml" />
     </modules>
   </component>
 </project>
