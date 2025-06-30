@@ -109,10 +109,12 @@ class IfoodAuth:
             if self.access_token:
                 finan = Financeiro(self.access_token)
                 finan.consume_dados()
+                # finan.consume_financerio_eventos()
         else:
             self.gera_user_code()
             finan = Financeiro(self.access_token)
             finan.consume_dados()
+            # finan.consume_financerio_eventos()
         return None
 
 

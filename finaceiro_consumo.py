@@ -8,7 +8,7 @@ import os
 class Financeiro:
     def __init__(self, access_token):
         self.url_financeiro_reconciliation = 'https://merchant-api.ifood.com.br/financial/v3.0/merchants/{merchantId}/reconciliation'
-        self.url_financeiro_events = 'https://merchant-api.ifood.com.br/financial/v3.0/merchants/{merchantId}/financial_events'
+        self.url_financeiro_events = 'https://merchant-api.ifood.com.br/financial/v3.0/merchants/{merchantId}/financial-events'
         self.access_token = access_token
         self.list_merchant_path = 'merchant_list.json'
         self.competencia = '2025-06'
@@ -66,31 +66,34 @@ class Financeiro:
                 return None
 
     # Consume Endpoint financial_events
-    # def consume_financerio_eventos(self):
-    #     if not os.path.exists(self.list_merchant_path):
-    #         print(f"Arquivo {self.list_merchant_path} não encontrado.")
-    #         return
-    #
-    #     with open(self.list_merchant_path, 'r', encoding='utf-8') as f:
-    #         merchants = json.load(f).get("list_merchantid", [])
-    #
-    #     for empresa in merchants:
-    #         merchant_id = empresa.get("merchantId")
-    #         url = self.url_financeiro_events.format(merchantId=merchant_id)
-    #         params = {
-    #             "beginDate": "2025-06-01",
-    #             "endData": "2025-06-25",
-    #             "page": "1",
-    #             "size": "100"
-    #         }
-    #
-    #         headers = {
-    #             "Authorization": f"Bearer {self.access_token}",
-    #             "Accept": "application/json"
-    #         }
-    #
-    #         response = requests.get(url, headers=headers, params=params)
-    #         if response.status_code == 200:
-    #             data = response.json()
-    #             print(data)
+    def consume_financerio_eventos(self):
+        if not os.path.exists(self.list_merchant_path):
+            print(f"Arquivo {self.list_merchant_path} não encontrado.")
+            return
 
+        with open(self.list_merchant_path, 'r', encoding='utf-8') as f:
+            merchants = json.load(f).get("list_merchantid", [])
+
+        for empresa in merchants:
+            merchant_id = empresa.get("merchantId")
+            url = self.url_financeiro_events.format(merchantId=merchant_id)
+            params = {
+                "beginDate": "2025-06-01",
+                "endDate": "2025-06-25",
+                "page": "1",
+                "size": "100"
+            }
+
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "Accept": "application/json"
+            }
+
+            response = requests.get(url, headers=headers, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                print(data)
+                return
+            else:
+                print(f"Erro: {response.status_code}: {response.text}")
+                return None
