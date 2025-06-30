@@ -25,7 +25,7 @@ class Financeiro:
         for empresa in merchants:
             razao = empresa.get("razao")
             merchant_id = empresa.get("merchantId")
-            url = self.url_financeiro_events.format(merchantId=merchant_id)
+            url = self.url_financeiro_reconciliation.format(merchantId=merchant_id)
             params = {
                 "competence": self.competencia,
             }
@@ -64,3 +64,33 @@ class Financeiro:
             else:
                 print(f"Erro: {response.status_code}: {response.text}")
                 return None
+
+    # Consume Endpoint financial_events
+    # def consume_financerio_eventos(self):
+    #     if not os.path.exists(self.list_merchant_path):
+    #         print(f"Arquivo {self.list_merchant_path} não encontrado.")
+    #         return
+    #
+    #     with open(self.list_merchant_path, 'r', encoding='utf-8') as f:
+    #         merchants = json.load(f).get("list_merchantid", [])
+    #
+    #     for empresa in merchants:
+    #         merchant_id = empresa.get("merchantId")
+    #         url = self.url_financeiro_events.format(merchantId=merchant_id)
+    #         params = {
+    #             "beginDate": "2025-06-01",
+    #             "endData": "2025-06-25",
+    #             "page": "1",
+    #             "size": "100"
+    #         }
+    #
+    #         headers = {
+    #             "Authorization": f"Bearer {self.access_token}",
+    #             "Accept": "application/json"
+    #         }
+    #
+    #         response = requests.get(url, headers=headers, params=params)
+    #         if response.status_code == 200:
+    #             data = response.json()
+    #             print(data)
+
