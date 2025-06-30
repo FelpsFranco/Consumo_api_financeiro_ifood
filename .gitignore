@@ -1,0 +1,5 @@
+.idea/
+*.iml
+*.py[cod]
+*.pyo
+*.pyd
