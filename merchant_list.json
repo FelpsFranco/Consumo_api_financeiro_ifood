@@ -1,0 +1,45 @@
+{
+  "list_merchantid":  [
+    {
+      "razao": "Barra Shopping",
+      "merchantId": "c5f007e7-0b29-4f9a-8d35-96648f8e04df"
+    },
+    {
+      "razao": "Montes Claros",
+      "merchantId": "e7e90e95-22e1-4189-bde2-c4a168a09db1"
+    },
+    {
+      "razao": "Ribeirão Shopping",
+      "merchantId": "4bff6f73-0433-49b2-9b71-28c59f644d2e"
+    },
+    {
+      "razao": "Shopping Brasília",
+      "merchantId": "420a7019-d7f5-4530-b689-47f1593bd7a3"
+    },
+    {
+      "razao": "Shopping Cnb",
+      "merchantId": "953e6fa7-d4ea-4d28-a085-0b81a1c25404"
+    },
+    {
+      "razao": "Shopping CPG",
+      "merchantId": "d35fa277-e78c-4e33-bdf7-0ef92c6bc08b"
+    },
+    {
+      "razao": "Shopping Itaquera",
+      "merchantId": "cd778ad8-08f5-4903-ac3a-d6e2e394f940"
+    },
+    {
+      "razao": "Shopping Jardins",
+      "merchantId": "3cbc4837-6496-4e5d-9243-3519d3273bce"
+    },
+    {
+      "razao": "Shopping Paralela",
+      "merchantId": "7f3be665-4aef-42e9-b44b-182368ee6c83"
+    },
+    {
+      "razao": "Shopping São Caetano",
+      "merchantId": "50a33aa8-62b7-4022-9670-ef159a63ea64"
+    }
+
+  ]
+}

@@ -65,7 +65,6 @@ class IfoodAuth:
         else:
             print(f"Erro {resp.status_code}: {resp.text}")
 
-
     def armazena_refresh_token(self):
         data = {
             "accessToken": self.access_token,
@@ -103,7 +102,6 @@ class IfoodAuth:
             print(f"Erro: {resp.status_code} - {resp.text}")
             return None
 
-
     def verifica_existe_refr(self):
         self.refresh_token = self.carregar_token()
         if self.refresh_token:
@@ -116,6 +114,7 @@ class IfoodAuth:
             finan = Financeiro(self.access_token)
             finan.consume_dados()
         return None
+
 
 if __name__ == "__main__":
     auth = IfoodAuth()
