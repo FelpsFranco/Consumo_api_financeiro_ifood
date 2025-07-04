@@ -1,4 +1,5 @@
 import requests
+from trata_dados import ReconciliationTransformer as recon
 import gzip
 import io
 import json
@@ -9,11 +10,11 @@ class Financeiro:
     def __init__(self, access_token):
         self.url_financeiro_reconciliation = 'https://merchant-api.ifood.com.br/financial/v3.0/merchants/{merchantId}/reconciliation'
         self.url_financeiro_events = 'https://merchant-api.ifood.com.br/financial/v3.0/merchants/{merchantId}/financial-events'
+        self.url_financeiro_receivable = 'https://merchant-api.ifood.com.br/financial/v3.0/merchants/{merchantId}/receivableRecords'
         self.access_token = access_token
         self.list_merchant_path = 'merchant_list.json'
         self.competencia = '2025-06'
 
-    # Consume Endpoint reconciliation
     def consume_dados(self):
         if not os.path.exists(self.list_merchant_path):
             print(f"Arquivo {self.list_merchant_path} não encontrado.")
@@ -43,24 +44,26 @@ class Financeiro:
                 print("downloadPath:", data.get('downloadPath'))
 
                 # DOWNLOAD AUTOMÁTICO PLANILHA
-                # if "downloadPath" in data:
-                #     download_url = data["downloadPath"]
-                #     file_response = requests.get(download_url)
-                #     if file_response.status_code == 200:
-                #         with gzip.GzipFile(fileobj=io.BytesIO(file_response.content)) as gz:
-                #             csv_content = gz.read()
-                #             downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
-                #             os.makedirs(downloads_path, exist_ok=True)
-                #             file_name = f"reconciliation_{razao}_{self.competencia.replace('-', '_')}.csv"
-                #             full_path = os.path.join(downloads_path, file_name)
-                #             with open(full_path, 'wb') as f:
-                #                 f.write(csv_content)
-                #             print('Arquivo Salvo em: ', full_path)
-                #             continue
-                #     else:
-                #         print(f"Erro: {file_response.status_code}")
-                # else:
-                #     print("Não encontrado downloadPath para Download do arquivo.")
+                if "downloadPath" in data:
+                    download_url = data["downloadPath"]
+                    file_response = requests.get(download_url)
+                    if file_response.status_code == 200:
+                        with gzip.GzipFile(fileobj=io.BytesIO(file_response.content)) as gz:
+                            csv_content = gz.read()
+                            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+                            os.makedirs(downloads_path, exist_ok=True)
+                            file_name = f"reconciliation_{razao}_{self.competencia.replace('-', '_')}.csv"
+                            full_path = os.path.join(downloads_path, file_name)
+                            with open(full_path, 'wb') as f:
+                                f.write(csv_content)
+                            print('Arquivo Salvo em: ', full_path)
+                            tratar_arquivo = recon(full_path, razao, self.competencia)
+                            tratar_arquivo.transformar()
+                            continue
+                    else:
+                        print(f"Erro: {file_response.status_code}")
+                else:
+                    print("Não encontrado downloadPath para Download do arquivo.")
             else:
                 print(f"Erro: {response.status_code}: {response.text}")
                 return None
