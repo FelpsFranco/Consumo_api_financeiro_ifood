@@ -22,9 +22,11 @@ class ReconciliationTransformer:
     def transformar(self):
         self.df = self.df.rename(columns={
             'loja_id_curto': 'Id Loja',
-            'pedido_associado_ifood_curto': 'Pedido Associado',
+            'pedido_associado_ifood': 'Pedido UUID',
+            'pedido_associado_ifood_curto': 'Pedido Curto',
             'competencia': 'Competência',
             'fato_gerador': 'Fator',
+            'data_fato_gerador': 'Data Pedido',
             'descricao_lancamento': 'Descrição',
             'valor': 'Valor',
             'base_calculo': 'Base Cálculo',
@@ -32,43 +34,63 @@ class ReconciliationTransformer:
             'motivo_cancelamento': 'Motivo Cancelamento'
         })
 
+        self.df['Data Pedido'] = pd.to_datetime(self.df['Data Pedido'], errors='coerce').dt.strftime('%Y-%m-%d')
         self.df = self.df[self.df['Motivo Cancelamento'].isna()]
         self.df['Descrição'] = self.df['Descrição'].str.strip()
         self.df['Fator'] = self.df['Fator'].str.strip()
 
-        base_cols = ['Id Loja', 'Pedido Associado', 'Competência']
-        df_base = self.df[base_cols].drop_duplicates().reset_index(drop=True)
+        base_cols = ['Id Loja', 'Pedido UUID', 'Competência']
+        df_base = self.df[base_cols + ['Pedido Curto']].drop_duplicates().reset_index(drop=True)
 
-        def extrair_valor(coluna_origem, descricao=None, descricao_alt=None, nome_final=None, forcar_positivo=False, fato_gerador='Venda'):
+        def extrair_valor(coluna_origem, descricao=None, descricao_alt=None,
+                          nome_final=None, forcar_positivo=False, fato_gerador=None):
             df_filtrado = self.df.copy()
 
             if fato_gerador:
-                df_filtrado = df_filtrado[
-                    df_filtrado['Fator'].str.lower().str.contains(fato_gerador.lower(), na=False, regex=False)
-                ]
+                if isinstance(fato_gerador, (list, tuple)):
+                    cond = df_filtrado['Fator'].str.lower().apply(lambda x: any(fg.lower() in x for fg in fato_gerador if isinstance(x, str)))
+                else:
+                    cond = df_filtrado['Fator'].str.lower().str.contains(fato_gerador.lower(), na=False, regex=False)
+                df_filtrado = df_filtrado[cond]
 
             if descricao:
-                cond = df_filtrado['Descrição'].str.lower().str.contains(descricao.lower(), na=False, regex=False)
+                if isinstance(descricao, (list, tuple)):
+                    cond = df_filtrado['Descrição'].str.lower().apply(
+                        lambda x: any(d.lower() in x for d in descricao if isinstance(x, str)))
+                else:
+                    cond = df_filtrado['Descrição'].str.strip().str.lower() == descricao.lower().strip()
+
                 if descricao_alt:
-                    cond |= df_filtrado['Descrição'].str.lower().str.contains(descricao_alt.lower(), na=False, regex=False)
+                    if isinstance(descricao_alt, (list, tuple)):
+                        cond |= df_filtrado['Descrição'].str.lower().apply(
+                            lambda x: any(d.lower() in x for d in descricao_alt if isinstance(x, str)))
+                    else:
+                        cond |= df_filtrado['Descrição'].str.lower().str.contains(descricao_alt.lower(), na=False, regex=False)
+
                 df_filtrado = df_filtrado[cond]
 
             if forcar_positivo:
                 df_filtrado[coluna_origem] = df_filtrado[coluna_origem].abs()
 
-            return (
-                df_filtrado[base_cols + [coluna_origem]]
-                .groupby(base_cols)
-                .sum()
-                .reset_index()
-            )
+            if coluna_origem == 'Data Pedido':
+                df_filtrado[coluna_origem] = pd.to_datetime(df_filtrado[coluna_origem], errors='coerce')
+                resultado = df_filtrado.groupby(base_cols)[coluna_origem].min().reset_index()
+                resultado[coluna_origem] = resultado[coluna_origem].dt.strftime('%Y-%m-%d')
+            else:
+                resultado = df_filtrado[base_cols + [coluna_origem]].groupby(base_cols).sum().reset_index()
+
+            return resultado
 
         lista_campos = [
+            ('Data Pedido', 'Entrada Financeira', None, 'Data pedido'),
             ('Valor', 'Entrada Financeira', None, 'Valor Pago'),
             ('Base Cálculo', 'Comissão do iFood (entrega própria da loja)', 'Comissão do iFood (entrega iFood)', 'Base', True),
             ('Valor', 'Taxa de transação', None, 'Taxa de Transação', True),
             ('Valor', 'Taxa de serviço iFood cobrada do cliente', None, 'Taxa Serviço', True),
-            ('Valor', 'Comissão do iFood (entrega própria da loja)', 'Comissão do iFood (entrega iFood)', 'Comissão Ifood', True),
+            ('Valor',
+             ['Comissão do iFood', 'Comissão do iFood (entrega própria da loja)', 'Comissão do iFood (entrega iFood)'],
+             None,
+             'Comissão Ifood', True),
             ('Valor', 'Taxa entrega iFood', None, 'Taxa entrega iFood', True),
             ('Valor', 'Promoção custeada pelo iFood', None, 'Promoção Custeada IFOOD', True),
             ('Valor', 'Promoção custeada pela loja', None, 'Promoção Loja', True),
@@ -77,7 +99,8 @@ class ReconciliationTransformer:
 
         for coluna_origem, descricao, descricao_alt, nome_final, *rest in lista_campos:
             forcar_positivo = rest[0] if rest else False
-            df_temp = extrair_valor(coluna_origem, descricao, descricao_alt, nome_final, forcar_positivo)
+            df_temp = extrair_valor(coluna_origem, descricao, descricao_alt, nome_final,
+                                    forcar_positivo, fato_gerador=['Venda', 'Solicitacao frete'])
             df_temp = df_temp.rename(columns={coluna_origem: nome_final})
             df_base = df_base.merge(df_temp, on=base_cols, how='left')
 
@@ -106,10 +129,11 @@ class ReconciliationTransformer:
 
         pedidos_com_ressarcimento = self.df[
             self.df['Fator'].str.lower().str.contains('ressarcimento', na=False)
-            ]['Pedido Associado'].unique()
+        ]['Pedido UUID'].unique()
+
         df_cancelamento = self.df[
-            ~self.df['Pedido Associado'].isin(pedidos_com_ressarcimento)
-            ].copy()
+            ~self.df['Pedido UUID'].isin(pedidos_com_ressarcimento)
+        ].copy()
 
         lista_campos_cancelamento = [
             ('Valor', 'Cancelamento Parcial', 'Entrada Financeira', 'Valor Pago Cancelado'),
@@ -125,21 +149,18 @@ class ReconciliationTransformer:
         df_base.fillna(0.0, inplace=True)
 
         df_base['Taxa de Transação'] = (
-            df_base['Taxa de Transação'] -
-            df_base['Taxa de Transação Cancelada']
+                df_base['Taxa de Transação'] - df_base['Taxa de Transação Cancelada']
         )
 
         df_base['Comissão Ifood'] = (
-                df_base['Comissão Ifood'] -
-                df_base['Comissão Ifood Cancelada']
+                df_base['Comissão Ifood'] - df_base['Comissão Ifood Cancelada']
         )
 
         df_base['Valor Bruto'] = (
-                df_base['Base'] +
-                df_base['Taxa Serviço'] +
+                df_base['Valor Pago'] +
                 df_base['Promoção Loja'] +
-                df_base['Taxa entrega iFood'] +
-                df_base['Promoção Loja no Delivery'] -
+                df_base['Promoção Loja no Delivery'] +
+                df_base['Promoção Custeada IFOOD'] -
                 df_base['Valor Pago Cancelado']
         )
 
@@ -157,15 +178,26 @@ class ReconciliationTransformer:
         df_base['Valor a Receber'] = df_base['Valor a Receber'].round(2)
 
         colunas_modelo = [
-            'Id Loja', 'Pedido Associado', 'Competência', 'Valor a Receber', 'Valor Bruto',
-            'Valor Pago', 'Comissão Ifood', 'Taxa Serviço', 'Taxa de Transação',
-            'Promoção Loja', 'Promoção Loja no Delivery', 'Promoção Custeada IFOOD'
+            'Id Loja', 'Pedido UUID', 'Pedido Curto',
+            'Competência',
+            'Data pedido',
+            'Valor a Receber',
+            'Valor Bruto',
+            'Valor Pago',
+            'Comissão Ifood',
+            'Taxa Serviço',
+            'Taxa de Transação',
+            'Promoção Loja',
+            'Promoção Loja no Delivery',
+            'Promoção Custeada IFOOD',
+            'Taxa entrega iFood',
+            'Valor Pago Cancelado'
         ]
 
         for col in colunas_modelo:
             if col not in df_base.columns:
                 df_base[col] = 0.0
 
-        df_base = df_base[df_base['Base'] > 0]
+        df_base = df_base[df_base['Valor Bruto'] > 0]
         df_final = df_base[colunas_modelo]
         return df_final
