@@ -24,6 +24,7 @@ class Financeiro:
             merchants = json.load(f).get("list_merchantid", [])
 
         for empresa in merchants:
+            cnpj = empresa.get("cnpj")
             razao = empresa.get("razao")
             merchant_id = empresa.get("merchantId")
             url = self.url_financeiro_reconciliation.format(merchantId=merchant_id)
@@ -57,16 +58,18 @@ class Financeiro:
                             with open(full_path, 'wb') as f:
                                 f.write(csv_content)
                             print('Arquivo Salvo em: ', full_path)
-                            tratar_arquivo = recon(full_path, razao, self.competencia)
+                            tratar_arquivo = recon(full_path, razao, self.competencia, cnpj)
                             tratar_arquivo.transformar()
                             continue
                     else:
                         print(f"Erro: {file_response.status_code}")
+                        continue
                 else:
                     print("Não encontrado downloadPath para Download do arquivo.")
+                    continue
             else:
                 print(f"Erro: {response.status_code}: {response.text}")
-                return None
+                continue
 
     # Consume Endpoint financial_events
     def consume_financerio_eventos(self):
@@ -96,7 +99,7 @@ class Financeiro:
             if response.status_code == 200:
                 data = response.json()
                 print(data)
-                return
+                continue
             else:
                 print(f"Erro: {response.status_code}: {response.text}")
-                return None
+                continue

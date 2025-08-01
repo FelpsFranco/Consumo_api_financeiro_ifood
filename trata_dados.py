@@ -3,7 +3,8 @@ import os
 
 
 class ReconciliationTransformer:
-    def __init__(self, caminho, razao, competencia):
+    def __init__(self, caminho, razao, competencia, cnpj):
+        self.cnpj = cnpj
         self.competencia = competencia
         self.razao = razao
         self.df_raw = pd.read_csv(caminho, sep=";")
@@ -41,6 +42,7 @@ class ReconciliationTransformer:
 
         base_cols = ['Id Loja', 'Pedido UUID', 'Competência']
         df_base = self.df[base_cols + ['Pedido Curto']].drop_duplicates().reset_index(drop=True)
+        df_base['CNPJ'] = self.cnpj
 
         def extrair_valor(coluna_origem, descricao=None, descricao_alt=None,
                           nome_final=None, forcar_positivo=False, fato_gerador=None):
@@ -178,6 +180,7 @@ class ReconciliationTransformer:
         df_base['Valor a Receber'] = df_base['Valor a Receber'].round(2)
 
         colunas_modelo = [
+            'CNPJ',
             'Id Loja', 'Pedido UUID', 'Pedido Curto',
             'Competência',
             'Data pedido',
